@@ -1,6 +1,6 @@
 # Finanzas · Dropshipping & SARL
 
-Aplicación web para centralizar la facturación de una tienda de dropshipping (Shopify) y las finanzas de una SARL francesa, con un calculador de impuestos que optimiza cómo retirar el dinero de la empresa (remuneración del gérant vs. dividendos).
+Aplicación web para centralizar la facturación de una tienda de dropshipping (Shopify) y las finanzas de una SARL luxemburguesa, con un calculador de impuestos que optimiza cómo retirar el dinero de la empresa (remuneración del gérant vs. dividendos).
 
 ## Qué hace
 
@@ -10,23 +10,21 @@ Aplicación web para centralizar la facturación de una tienda de dropshipping (
 - **Impuestos y retiro**: a partir del resultado del ejercicio (o un importe manual), un slider reparte el resultado entre remuneración del gérant y dividendos y muestra:
   - el neto que llega a tu cuenta personal, el total de impuestos y cotizaciones y el tipo efectivo;
   - la curva de neto para todas las estrategias, con el óptimo marcado y un botón para aplicarlo;
-  - la cascada completa: cotizaciones TNS, IS (15 % / 25 %), prélèvements sociaux, TNS sobre dividendos por encima del 10 % del capital, IR (barème con cociente familiar y décote), PFU o opción barème;
+  - la cascada completa: IRC (14 % / 16 %) con fondo de empleo, ICC municipal, impuesto sobre el patrimonio mínimo, cotizaciones CCSS del gérant independiente (base mínima y techo), dependencia 1,4 %, IR por clase de impuesto (1 o 2) con fondo de empleo, y dividendos con exención del 50 %;
   - comparativa 100 % dividendos / óptimo / tu selección / 100 % remuneración;
-  - TVA, IS y cotizaciones a provisionar.
-- **Ajustes**: datos de la empresa (capital, CCA, participación), situación personal (partes, otros ingresos del hogar) y todos los parámetros fiscales editables (tipos, umbrales, barème del IR). Copia de seguridad JSON y restauración.
+  - TVA, impuestos de sociedad y cotizaciones a provisionar.
+- **Ajustes**: empresa (participación, TVA por defecto), situación personal (clase de impuesto, otros ingresos del hogar) y todos los parámetros fiscales editables (tipos, umbrales, ICC del municipio, barème del IR). Copia de seguridad JSON y restauración.
 
 Los datos se guardan en el navegador (`localStorage`); no hay servidor.
 
-## Modelo fiscal (Francia, SARL al IS, gérant majoritaire TNS)
+## Modelo fiscal (Luxemburgo, SARL al IRC, gérant majoritaire independiente)
 
-El motor está en `src/domain/tax/france.ts` y se prueba en `france.test.ts`. Simplificaciones:
+El motor está en `src/domain/tax/luxembourg.ts` y se prueba en `luxembourg.test.ts`. Reglas modeladas (parámetros 2025 en `src/domain/tax/defaults.ts`, editables en Ajustes):
 
-- Cotizaciones TNS = porcentaje fijo del neto (45 % por defecto) con un mínimo anual.
-- Dividendos: PFU 12,8 % + 17,2 % de PS en la parte ≤ 10 % de (capital + primas + CCA); la parte superior paga cotizaciones TNS en lugar de PS.
-- IR por barème progresivo con abattement del 10 %, cociente familiar y décote.
-- No incluye CFE, contribución social sobre el IS ni la deducibilidad de las cotizaciones sobre dividendos.
-
-Los parámetros por defecto corresponden al barème 2025 (`src/domain/tax/defaults.ts`) y se actualizan desde Ajustes.
+- **Empresa**: la remuneración del gérant es deducible. Sobre el resto: IRC 14 % hasta 175 000 €, tramo intermedio hasta 200 000 €, 16 % por encima; fondo de empleo 7 % del IRC; ICC 6,75 % (Luxembourg-Ville) tras exención de 17 500 €; impuesto sobre el patrimonio mínimo 535 €.
+- **Remuneración**: cotizaciones CCSS ≈ 25 % (deducibles) sobre una base entre el salario social mínimo y 5 veces ese salario; dependencia 1,4 % (no deducible); deducciones a tanto alzado 1 020 €; barème del IR clase 1 (23 tramos, 0–42 %) o clase 2 (splitting), con fondo de empleo 7 % (9 % por encima de 150 000 / 300 000 €).
+- **Dividendos**: 50 % exentos (art. 115 15a LIR), exención de 1 500 € (3 000 € en clase 2), resto al barème; dependencia 1,4 %. La retención del 15 % se imputa en la declaración, por lo que no cambia el neto final.
+- No incluye los créditos de impuesto CIS/CII, el impuesto sobre el patrimonio proporcional (0,5 %) ni el caso del gérant minoritario (< 25 %), que tributaría como asalariado.
 
 ## Importar pedidos de Shopify
 

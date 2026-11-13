@@ -3,7 +3,7 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 import { useStore } from '../store/useStore'
 import { filterYear, monthlySeries, summarize } from '../domain/finance'
 import { EXPENSE_CATEGORIES, type ExpenseCategory } from '../domain/types'
-import { computeWithdrawal } from '../domain/tax/france'
+import { computeWithdrawal } from '../domain/tax/luxembourg'
 import { fmtEUR, fmtNum, fmtPct, monthLabel } from '../lib/format'
 import { ChartTooltip, Empty, Legend, Stat } from '../components/ui'
 import { demoData } from '../lib/demo'
@@ -17,15 +17,8 @@ export default function Dashboard() {
   const s = useMemo(() => summarize(yOrders, yExpenses), [yOrders, yExpenses])
   const monthly = useMemo(() => monthlySeries(yOrders, yExpenses, year), [yOrders, yExpenses, year])
 
-  // Estimación rápida: todo el resultado se queda en la empresa (IS) — la optimización está en Impuestos
-  const quick = computeWithdrawal({
-    resultBeforeRemuneration: s.operatingResult,
-    remunerationNet: 0,
-    distributionRate: 0,
-    dividendMode: 'pfu',
-    company,
-    params: tax,
-  })
+  // Estimación rápida: todo el resultado se queda en la empresa — la optimización está en Impuestos y retiro
+  const quick = computeWithdrawal({ resultBeforeRemuneration: s.operatingResult, remunerationGross: 0, distributionRate: 0, company, params: tax })
 
   const categories = (Object.entries(s.expensesByCategory) as [ExpenseCategory, number][])
     .sort((a, b) => b[1] - a[1])
@@ -52,7 +45,7 @@ export default function Dashboard() {
         <Stat label="Margen bruto" value={fmtEUR(s.grossMargin)} sub={s.revenueHT ? `${fmtPct(s.grossMargin / s.revenueHT)} sobre CA HT` : undefined} />
         <Stat label="Gastos de explotación" value={fmtEUR(s.expensesHT)} sub={`Publicidad ${fmtEUR(s.expensesByCategory.ads ?? 0)}`} />
         <Stat
-          label="Resultado antes de remuneración e IS"
+          label="Resultado antes de remuneración e impuestos"
           value={fmtEUR(s.operatingResult)}
           tone={s.operatingResult >= 0 ? 'good' : 'bad'}
           sub={s.revenueHT ? `${fmtPct(s.operatingResult / s.revenueHT)} de margen neto` : undefined}
@@ -63,7 +56,7 @@ export default function Dashboard() {
         <Stat label="TVA recaudada" value={fmtEUR(s.tvaCollected)} />
         <Stat label="TVA deducible" value={fmtEUR(s.tvaDeductible)} />
         <Stat label="TVA a pagar (estimada)" value={fmtEUR(s.tvaToPay)} tone={s.tvaToPay > 0 ? undefined : 'good'} />
-        <Stat label="IS estimado (sin remuneración)" value={fmtEUR(quick.corporateTax)} sub="Optimiza en Impuestos y retiro" />
+        <Stat label="IRC + ICC + IF estimados (sin remuneración)" value={fmtEUR(quick.corporateTaxTotal)} sub="Optimiza en Impuestos y retiro" />
       </div>
 
       <div className="grid lg:grid-cols-3 gap-4">

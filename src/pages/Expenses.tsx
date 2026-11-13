@@ -120,7 +120,7 @@ function ExpenseForm({ expense, onClose, onSave, onDelete }: { expense: Expense;
         <Field label="Proveedor"><input className="input" value={e.vendor} onChange={(ev) => set('vendor', ev.target.value)} placeholder="Meta Ads, Shopify, CJ Dropshipping…" /></Field>
         <Field label="Tipo TVA (%)">
           <select className="select" value={e.tvaRate} onChange={(ev) => recalc(e.amountHT, Number(ev.target.value))}>
-            {[0, 5.5, 10, 20].map((r) => <option key={r} value={r}>{r} %</option>)}
+            {[0, 3, 8, 14, 17].map((r) => <option key={r} value={r}>{r} %</option>)}
           </select>
         </Field>
         <Field label={ttcMode ? 'Importe TTC' : 'Importe HT'} hint={<button type="button" className="underline" onClick={() => setTtcMode(!ttcMode)}>{ttcMode ? 'Introducir HT' : 'Introducir TTC'}</button>}>
@@ -131,7 +131,7 @@ function ExpenseForm({ expense, onClose, onSave, onDelete }: { expense: Expense;
         <Field label="TVA"><NumberInput value={e.tvaAmount} onChange={(n) => set('tvaAmount', n)} /></Field>
         <label className="flex items-center gap-2 text-sm col-span-2">
           <input type="checkbox" checked={e.deductible} onChange={(ev) => set('deductible', ev.target.checked)} />
-          TVA deducible (factura con TVA francesa / autoliquidación intracomunitaria)
+          TVA deducible (factura con TVA luxemburguesa; las facturas intracomunitarias autoliquidadas no generan TVA neta)
         </label>
         <div className="col-span-2"><Field label="Notas"><input className="input" value={e.notes ?? ''} onChange={(ev) => set('notes', ev.target.value)} /></Field></div>
       </div>

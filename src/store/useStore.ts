@@ -19,6 +19,8 @@ interface StoreState extends AppData {
   clearAll: () => void
 }
 
+type Persisted = Pick<StoreState, 'orders' | 'expenses' | 'company' | 'tax' | 'year'>
+
 export const useStore = create<StoreState>()(
   persist(
     (set) => ({
@@ -54,7 +56,21 @@ export const useStore = create<StoreState>()(
       clearAll: () => set({ orders: [], expenses: [] }),
     }),
     {
-      name: 'finanzas-dropshipping-v1',
+      name: 'finanzas-dropshipping',
+      version: 2,
+      migrate: (persisted, version) => {
+        const state = (persisted ?? {}) as Partial<Persisted>
+        const merged: Persisted = {
+          orders: state.orders ?? [],
+          expenses: state.expenses ?? [],
+          company: { ...DEFAULT_COMPANY, ...(state.company ?? {}) },
+          tax: { ...DEFAULT_TAX_PARAMS, ...(state.tax ?? {}) },
+          year: state.year ?? new Date().getFullYear(),
+        }
+        // v1 guardaba parámetros franceses: se sustituyen por los luxemburgueses
+        if (version < 2) return { ...merged, tax: DEFAULT_TAX_PARAMS, company: { ...DEFAULT_COMPANY, name: state.company?.name ?? DEFAULT_COMPANY.name } }
+        return merged
+      },
       partialize: (s) => ({ orders: s.orders, expenses: s.expenses, company: s.company, tax: s.tax, year: s.year }),
     },
   ),

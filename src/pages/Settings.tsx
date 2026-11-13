@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { useStore } from '../store/useStore'
 import { downloadText } from '../lib/csv'
 import { Field, NumberInput } from '../components/ui'
-import type { IRBracket } from '../domain/types'
+import type { IRBracket, TaxClass } from '../domain/types'
 
 export default function Settings() {
   const { company, tax, setCompany, setTax, resetTax, importAll, clearAll, orders, expenses } = useStore()
@@ -35,59 +35,79 @@ export default function Settings() {
         <div className="grid md:grid-cols-3 gap-3">
           <Field label="Nombre"><input className="input" value={company.name} onChange={(e) => setCompany({ name: e.target.value })} /></Field>
           <Field label="Forma jurídica"><input className="input" value={company.legalForm} onChange={(e) => setCompany({ legalForm: e.target.value })} /></Field>
-          <Field label="TVA por defecto (%)"><NumberInput value={company.defaultTvaRate} onChange={(n) => setCompany({ defaultTvaRate: n })} step={0.5} /></Field>
-          <Field label="Capital social (€)" hint="Base del umbral del 10 % para dividendos"><NumberInput value={company.capitalSocial} onChange={(n) => setCompany({ capitalSocial: n })} step={100} /></Field>
-          <Field label="Primas de emisión + cuenta corriente de socio (€)" hint="Saldo medio del ejercicio"><NumberInput value={company.primesAndCCA} onChange={(n) => setCompany({ primesAndCCA: n })} step={100} /></Field>
-          <Field label="Participación del gérant (%)"><NumberInput value={company.ownershipPct} onChange={(n) => setCompany({ ownershipPct: n })} step={1} min={0} max={100} /></Field>
-          <Field label="Partes del cociente familiar" hint="1 soltero · 2 pareja · +0,5 por hijo"><NumberInput value={company.fiscalParts} onChange={(n) => setCompany({ fiscalParts: n })} step={0.5} min={1} /></Field>
+          <Field label="TVA por defecto (%)" hint="Luxemburgo: 17 % normal · 14 % · 8 % · 3 %"><NumberInput value={company.defaultTvaRate} onChange={(n) => setCompany({ defaultTvaRate: n })} step={0.5} /></Field>
+          <Field label="Clase de impuesto del gérant" hint="Clase 2: casado o pacs con imposición colectiva (splitting)">
+            <select className="select" value={company.taxClass} onChange={(e) => setCompany({ taxClass: Number(e.target.value) as TaxClass })}>
+              <option value={1}>Clase 1 (soltero)</option>
+              <option value={2}>Clase 2 (imposición colectiva)</option>
+            </select>
+          </Field>
           <Field label="Otros ingresos imponibles del hogar (€/año)" hint="Sueldo de la pareja, alquileres… sitúan tu tramo marginal"><NumberInput value={company.otherHouseholdIncome} onChange={(n) => setCompany({ otherHouseholdIncome: n })} step={500} /></Field>
+          <Field label="Participación del gérant (%)" hint="Con menos del 25 % tributarías como asalariado"><NumberInput value={company.ownershipPct} onChange={(n) => setCompany({ ownershipPct: n })} step={1} min={0} max={100} /></Field>
         </div>
       </section>
 
       <section className="card flex flex-col gap-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <h2 className="font-medium">Parámetros fiscales (Francia · {tax.year})</h2>
+          <h2 className="font-medium">Parámetros fiscales (Luxemburgo · {tax.year})</h2>
           <button className="btn btn-sm" onClick={() => confirm('¿Restaurar los valores por defecto?') && resetTax()}>Restaurar por defecto</button>
         </div>
-        <p className="text-sm text-2">Todos los tipos y umbrales son editables para actualizarlos cada año o adaptarlos a tu situación. Los valores van en porcentaje.</p>
-        <h3 className="text-sm font-medium mt-1">Impuesto de sociedades (IS)</h3>
+        <p className="text-sm text-2">Todos los tipos y umbrales son editables para actualizarlos cada año o adaptarlos a tu municipio y situación. Los tipos van en porcentaje.</p>
+
+        <h3 className="text-sm font-medium mt-1">Impuestos de la empresa</h3>
         <div className="grid md:grid-cols-4 gap-3">
           <Field label="Año de referencia"><NumberInput value={tax.year} onChange={(n) => setTax({ year: n })} step={1} /></Field>
-          <Field label="Tipo reducido (%)">{pct(tax.isReducedRate, (n) => setTax({ isReducedRate: n }))}</Field>
-          <Field label="Umbral tipo reducido (€)"><NumberInput value={tax.isReducedThreshold} onChange={(n) => setTax({ isReducedThreshold: n })} step={500} /></Field>
-          <Field label="Tipo normal (%)">{pct(tax.isNormalRate, (n) => setTax({ isNormalRate: n }))}</Field>
+          <Field label="IRC tipo bajo (%)">{pct(tax.ircLowRate, (n) => setTax({ ircLowRate: n }))}</Field>
+          <Field label="IRC umbral tipo bajo (€)"><NumberInput value={tax.ircLowThreshold} onChange={(n) => setTax({ ircLowThreshold: n })} step={1000} /></Field>
+          <Field label="IRC tipo alto (%)">{pct(tax.ircHighRate, (n) => setTax({ ircHighRate: n }))}</Field>
+          <Field label="IRC umbral tipo alto (€)"><NumberInput value={tax.ircHighThreshold} onChange={(n) => setTax({ ircHighThreshold: n })} step={1000} /></Field>
+          <Field label="IRC tramo intermedio: base (€)"><NumberInput value={tax.ircMidBase} onChange={(n) => setTax({ ircMidBase: n })} step={100} /></Field>
+          <Field label="IRC tramo intermedio: tipo marginal (%)">{pct(tax.ircMidRate, (n) => setTax({ ircMidRate: n }))}</Field>
+          <Field label="Fondo de empleo sobre IRC (%)">{pct(tax.ircEmploymentFundRate, (n) => setTax({ ircEmploymentFundRate: n }))}</Field>
+          <Field label="ICC municipal (%)" hint="Luxembourg-Ville 6,75 %; Esch 7,5 %…">{pct(tax.iccRate, (n) => setTax({ iccRate: n }), 0.01)}</Field>
+          <Field label="ICC exención (€)"><NumberInput value={tax.iccAllowance} onChange={(n) => setTax({ iccAllowance: n })} step={100} /></Field>
+          <Field label="Impuesto sobre el patrimonio mínimo (€)" hint="535 € para balances ≤ 350 k€"><NumberInput value={tax.minimumWealthTax} onChange={(n) => setTax({ minimumWealthTax: n })} step={5} /></Field>
         </div>
-        <h3 className="text-sm font-medium mt-1">Remuneración del gérant (TNS)</h3>
+
+        <h3 className="text-sm font-medium mt-1">Gérant independiente (CCSS)</h3>
         <div className="grid md:grid-cols-4 gap-3">
-          <Field label="Cotizaciones TNS (% del neto)" hint="≈ 45 % del neto para un gérant majoritaire">{pct(tax.tnsRate, (n) => setTax({ tnsRate: n }))}</Field>
-          <Field label="Cotizaciones mínimas (€/año)"><NumberInput value={tax.tnsMinimum} onChange={(n) => setTax({ tnsMinimum: n })} step={50} /></Field>
-          <Field label="Abattement IR (%)">{pct(tax.salaryAllowanceRate, (n) => setTax({ salaryAllowanceRate: n }))}</Field>
-          <Field label="Abattement máximo (€)"><NumberInput value={tax.salaryAllowanceMax} onChange={(n) => setTax({ salaryAllowanceMax: n })} step={1} /></Field>
+          <Field label="Cotizaciones CCSS (%)" hint="Pensión 16 % + salud ≈ 5,6 % + accidente + mutualidad">{pct(tax.socialRate, (n) => setTax({ socialRate: n }))}</Field>
+          <Field label="Base mínima anual (€)" hint="Salario social mínimo × 12"><NumberInput value={tax.socialMinBase} onChange={(n) => setTax({ socialMinBase: n })} step={100} /></Field>
+          <Field label="Techo anual (€)" hint="5 × salario social mínimo × 12"><NumberInput value={tax.socialMaxBase} onChange={(n) => setTax({ socialMaxBase: n })} step={100} /></Field>
+          <Field label="Dependencia (%)" hint="No deducible; también sobre dividendos">{pct(tax.dependencyRate, (n) => setTax({ dependencyRate: n }))}</Field>
+          <label className="flex items-center gap-2 text-sm md:col-span-2">
+            <input type="checkbox" checked={tax.socialMinimumAlways} onChange={(e) => setTax({ socialMinimumAlways: e.target.checked })} />
+            Cotizar sobre la base mínima aunque la remuneración sea cero (gérant con autorización de establecimiento)
+          </label>
+          <Field label="Deducciones a tanto alzado IR (€)" hint="Frais d'obtention 540 € + dépenses spéciales 480 €"><NumberInput value={tax.salaryDeductions} onChange={(n) => setTax({ salaryDeductions: n })} step={10} /></Field>
         </div>
+
         <h3 className="text-sm font-medium mt-1">Dividendos</h3>
         <div className="grid md:grid-cols-4 gap-3">
-          <Field label="PFU parte IR (%)">{pct(tax.pfuIncomeRate, (n) => setTax({ pfuIncomeRate: n }))}</Field>
-          <Field label="Prélèvements sociaux (%)">{pct(tax.socialLevyRate, (n) => setTax({ socialLevyRate: n }))}</Field>
-          <Field label="Abattement opción barème (%)">{pct(tax.dividendAllowanceRate, (n) => setTax({ dividendAllowanceRate: n }))}</Field>
-          <Field label="Umbral TNS sobre dividendos (% capital)">{pct(tax.dividendTnsThresholdRate, (n) => setTax({ dividendTnsThresholdRate: n }))}</Field>
+          <Field label="Exención parcial (%)" hint="Art. 115 15a LIR">{pct(tax.dividendExemption, (n) => setTax({ dividendExemption: n }))}</Field>
+          <Field label="Exención rentas de capital (€)" hint="Se duplica en clase 2"><NumberInput value={tax.dividendAllowance} onChange={(n) => setTax({ dividendAllowance: n })} step={100} /></Field>
         </div>
-        <h3 className="text-sm font-medium mt-1">Barème del impuesto sobre la renta (por parte)</h3>
-        <div className="grid md:grid-cols-5 gap-3">
-          {tax.irBrackets.map((b, i) => (
-            <div key={i} className="flex flex-col gap-2">
-              <Field label={`Tramo ${i + 1}: hasta (€)`}>
-                {b.upTo === null ? <input className="input" value="∞" disabled /> : <NumberInput value={b.upTo} onChange={(n) => setBracket(i, { upTo: n })} step={1} />}
-              </Field>
-              <Field label="Tipo (%)">{pct(b.rate, (n) => setBracket(i, { rate: n }), 1)}</Field>
-            </div>
-          ))}
+
+        <h3 className="text-sm font-medium mt-1">Barème del IR (clase 1) y fondo de empleo</h3>
+        <div className="grid md:grid-cols-4 gap-3">
+          <Field label="Fondo de empleo (%)">{pct(tax.irEmploymentFundRate, (n) => setTax({ irEmploymentFundRate: n }))}</Field>
+          <Field label="Fondo de empleo tipo alto (%)">{pct(tax.irEmploymentFundHighRate, (n) => setTax({ irEmploymentFundHighRate: n }))}</Field>
+          <Field label="Umbral tipo alto clase 1 (€)"><NumberInput value={tax.irEmploymentFundThresholdClass1} onChange={(n) => setTax({ irEmploymentFundThresholdClass1: n })} step={1000} /></Field>
+          <Field label="Umbral tipo alto clase 2 (€)"><NumberInput value={tax.irEmploymentFundThresholdClass2} onChange={(n) => setTax({ irEmploymentFundThresholdClass2: n })} step={1000} /></Field>
         </div>
-        <div className="grid md:grid-cols-5 gap-3">
-          <Field label="Décote umbral soltero (€)"><NumberInput value={tax.decoteThresholdSingle} onChange={(n) => setTax({ decoteThresholdSingle: n })} step={1} /></Field>
-          <Field label="Décote base soltero (€)"><NumberInput value={tax.decoteBaseSingle} onChange={(n) => setTax({ decoteBaseSingle: n })} step={1} /></Field>
-          <Field label="Décote umbral pareja (€)"><NumberInput value={tax.decoteThresholdCouple} onChange={(n) => setTax({ decoteThresholdCouple: n })} step={1} /></Field>
-          <Field label="Décote base pareja (€)"><NumberInput value={tax.decoteBaseCouple} onChange={(n) => setTax({ decoteBaseCouple: n })} step={1} /></Field>
-          <Field label="Décote tipo (%)">{pct(tax.decoteRate, (n) => setTax({ decoteRate: n }), 0.01)}</Field>
+        <div className="overflow-x-auto">
+          <table className="data">
+            <thead><tr><th>Tramo</th><th>Hasta (€)</th><th>Tipo (%)</th></tr></thead>
+            <tbody>
+              {tax.irBrackets.map((b, i) => (
+                <tr key={i}>
+                  <td className="muted">{i + 1}</td>
+                  <td style={{ width: 200 }}>{b.upTo === null ? <input className="input" value="∞" disabled /> : <NumberInput value={b.upTo} onChange={(n) => setBracket(i, { upTo: n })} step={1} />}</td>
+                  <td style={{ width: 140 }}>{pct(b.rate, (n) => setBracket(i, { rate: n }), 1)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </section>
 

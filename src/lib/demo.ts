@@ -24,7 +24,7 @@ export function demoData(year: number): { orders: Order[]; expenses: Expense[] }
         customer: `cliente${n}@mail.com`,
         country: countries[Math.floor(rnd() * countries.length)],
         totalTTC: total,
-        tvaCollected: Math.round((total - total / 1.2) * 100) / 100,
+        tvaCollected: Math.round((total - total / 1.17) * 100) / 100,
         refunds: refunded ? total : 0,
         cogs: Math.round(price * qty * 0.22 * 100) / 100,
         shippingCost: 3.5 * qty,
@@ -41,8 +41,8 @@ export function demoData(year: number): { orders: Order[]; expenses: Expense[] }
       { id: uid(), date, category: 'ads', vendor: 'TikTok Ads', amountHT: ads * 0.3, tvaRate: 0, tvaAmount: 0, deductible: false },
       { id: uid(), date, category: 'shopify', vendor: 'Shopify', amountHT: 36, tvaRate: 0, tvaAmount: 0, deductible: false },
       { id: uid(), date, category: 'software', vendor: 'Apps Shopify', amountHT: 59, tvaRate: 0, tvaAmount: 0, deductible: false },
-      { id: uid(), date, category: 'accounting', vendor: 'Expert-comptable', amountHT: 120, tvaRate: 20, tvaAmount: 24, deductible: true },
-      { id: uid(), date, category: 'bank', vendor: 'Qonto', amountHT: 29, tvaRate: 20, tvaAmount: 5.8, deductible: true },
+      { id: uid(), date, category: 'accounting', vendor: 'Fiduciaire', amountHT: 150, tvaRate: 17, tvaAmount: 25.5, deductible: true },
+      { id: uid(), date, category: 'bank', vendor: 'Banco', amountHT: 29, tvaRate: 0, tvaAmount: 0, deductible: false },
     )
   }
   return { orders, expenses }

@@ -67,50 +67,55 @@ export interface IRBracket {
   rate: number
 }
 
+export type TaxClass = 1 | 2
+
+/** Parámetros fiscales — Luxemburgo, SARL sujeta al IRC con gérant majoritaire afiliado como independiente */
 export interface TaxParams {
-  /** Año fiscal al que se refieren los parámetros */
   year: number
-  /** Tipo reducido IS */
-  isReducedRate: number
-  /** Umbral del tipo reducido IS */
-  isReducedThreshold: number
-  /** Tipo normal IS */
-  isNormalRate: number
-  /** Cotizaciones TNS como % de la remuneración neta del gérant */
-  tnsRate: number
-  /** Cotizaciones mínimas anuales TNS (incluso con remuneración 0) */
-  tnsMinimum: number
-  /** Abattement 10% sobre remuneración para IR */
-  salaryAllowanceRate: number
-  salaryAllowanceMin: number
-  salaryAllowanceMax: number
-  /** PFU (flat tax) parte IR */
-  pfuIncomeRate: number
-  /** Prélèvements sociaux sobre dividendos */
-  socialLevyRate: number
-  /** Abattement sobre dividendos si opción barème */
-  dividendAllowanceRate: number
-  /** CSG deducible si opción barème */
-  csgDeductibleRate: number
-  /** Umbral: dividendos > 10 % de (capital + primas + CCA) → cotizaciones TNS */
-  dividendTnsThresholdRate: number
+  /** IRC: tipo hasta el primer umbral */
+  ircLowRate: number
+  ircLowThreshold: number
+  /** IRC: tramo intermedio = base fija + tipo marginal sobre el exceso */
+  ircMidBase: number
+  ircMidRate: number
+  ircHighThreshold: number
+  ircHighRate: number
+  /** Contribución al fondo de empleo sobre el IRC */
+  ircEmploymentFundRate: number
+  /** ICC (impôt commercial communal) del municipio y su exención */
+  iccRate: number
+  iccAllowance: number
+  /** Impuesto sobre el patrimonio mínimo (IF minimum), importe fijo anual */
+  minimumWealthTax: number
+  /** Cotizaciones CCSS del independiente (pensión, salud, accidente, mutualidad), deducibles del IR */
+  socialRate: number
+  /** Base mínima anual (salario social mínimo × 12) y techo (5 × SSM × 12) */
+  socialMinBase: number
+  socialMaxBase: number
+  /** El gérant con autorización de establecimiento cotiza sobre la base mínima aunque no cobre */
+  socialMinimumAlways: boolean
+  /** Seguro de dependencia (no deducible), sobre remuneración y rentas de capital */
+  dependencyRate: number
+  /** Deducciones a tanto alzado sobre la remuneración (frais d'obtention + dépenses spéciales) */
+  salaryDeductions: number
+  /** Exención parcial de dividendos (art. 115 15a LIR) */
+  dividendExemption: number
+  /** Exención de rentas de capital (clase 1; se duplica en clase 2) */
+  dividendAllowance: number
+  /** Barème del IR, clase 1 */
   irBrackets: IRBracket[]
-  /** Décote */
-  decoteThresholdSingle: number
-  decoteThresholdCouple: number
-  decoteBaseSingle: number
-  decoteBaseCouple: number
-  decoteRate: number
+  /** Recargo del fondo de empleo sobre el IR: tipo normal y tipo alto a partir de un umbral de renta imponible */
+  irEmploymentFundRate: number
+  irEmploymentFundHighRate: number
+  irEmploymentFundThresholdClass1: number
+  irEmploymentFundThresholdClass2: number
 }
 
 export interface CompanySettings {
   name: string
   legalForm: string
-  capitalSocial: number
-  /** Primas de emisión + saldo medio cuenta corriente de socio */
-  primesAndCCA: number
-  /** Partes del cociente familiar */
-  fiscalParts: number
+  /** Clase de impuesto del gérant: 1 (soltero) o 2 (casado / pacs con imposición colectiva) */
+  taxClass: TaxClass
   /** Otros ingresos imponibles del hogar (para situar el tramo marginal) */
   otherHouseholdIncome: number
   /** % de participación del gérant en el capital */
